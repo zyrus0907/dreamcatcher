@@ -40,7 +40,7 @@ class _DreamRecoveryScreenState extends State<DreamRecoveryScreen> {
 
     try {
       final res = await supabase.functions.invoke(
-        'dream-recovery',
+        'bright-service',
         body: {'messages': _messages},
       );
       final reply = (res.data?['reply'] as String?)?.trim() ?? '';

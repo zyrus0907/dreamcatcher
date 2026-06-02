@@ -6,6 +6,7 @@ import 'new_dream_screen.dart';
 import 'dream_detail_screen.dart';
 import 'search_screen.dart';
 import 'dream_recovery_screen.dart';
+import 'pattern_analysis_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -99,6 +100,13 @@ class _HomeScreenState extends State<HomeScreen> {
             tooltip: 'Recover a dream',
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const DreamRecoveryScreen()),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.insights),
+            tooltip: 'Patterns',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PatternAnalysisScreen()),
             ),
           ),
           IconButton(

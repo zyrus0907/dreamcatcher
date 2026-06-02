@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase_config.dart';
 import 'auth_gate.dart';
 import 'new_dream_screen.dart';
+import 'dream_detail_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -78,6 +79,13 @@ class _HomeScreenState extends State<HomeScreen> {
     if (saved == true) _loadDreams();
   }
 
+  Future<void> _openDream(Map<String, dynamic> dream) async {
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => DreamDetailScreen(dream: dream)),
+    );
+    if (changed == true) _loadDreams();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -123,6 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ?.toLocal();
                       return Card(
                         child: ListTile(
+                          onTap: () => _openDream(dream),
                           title: Text(
                             (title == null || title.isEmpty)
                                 ? 'Untitled dream'
@@ -144,6 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ],
                             ],
                           ),
+                          trailing: const Icon(Icons.chevron_right),
                         ),
                       );
                     },

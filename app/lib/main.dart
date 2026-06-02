@@ -5,6 +5,7 @@ import 'auth_gate.dart';
 import 'new_dream_screen.dart';
 import 'dream_detail_screen.dart';
 import 'search_screen.dart';
+import 'dream_recovery_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -93,6 +94,13 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('My Dreams'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.auto_awesome),
+            tooltip: 'Recover a dream',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const DreamRecoveryScreen()),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.search),
             tooltip: 'Search',

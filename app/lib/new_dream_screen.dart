@@ -1,4 +1,8 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:record/record.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'main.dart';
 
 const kEmotionOptions = [
@@ -7,7 +11,6 @@ const kEmotionOptions = [
 ];
 
 class NewDreamScreen extends StatefulWidget {
-  // null = creating a new dream; non-null = editing this one.
   final Map<String, dynamic>? dream;
   const NewDreamScreen({super.key, this.dream});
 
@@ -20,8 +23,12 @@ class _NewDreamScreenState extends State<NewDreamScreen> {
   late final TextEditingController _contentController;
   late final TextEditingController _tagsController;
   late final Set<String> _selectedEmotions;
-  bool _saving = false;
 
+  final AudioRecorder _recorder = AudioRecorder();
+  bool _isRecording = false;
+  Uint8List? _audioBytes; // a freshly recorded clip waiting to be uploaded
+
+  bool _saving = false;
   bool get _isEditing => widget.dream != null;
 
   @override
@@ -43,6 +50,7 @@ class _NewDreamScreenState extends State<NewDreamScreen> {
     _titleController.dispose();
     _contentController.dispose();
     _tagsController.dispose();
+    _recorder.dispose();
     super.dispose();
   }
 
@@ -52,6 +60,39 @@ class _NewDreamScreenState extends State<NewDreamScreen> {
         .map((t) => t.trim())
         .where((t) => t.isNotEmpty)
         .toList();
+  }
+
+  Future<void> _toggleRecording() async {
+    try {
+      if (_isRecording) {
+        final path = await _recorder.stop();
+        setState(() => _isRecording = false);
+        if (path != null) {
+          // Fetch the recorded audio's bytes so we can upload them on save.
+          final bytes = await http.readBytes(Uri.parse(path));
+          setState(() => _audioBytes = bytes);
+        }
+      } else {
+        if (await _recorder.hasPermission()) {
+          await _recorder.start(const RecordConfig(encoder: AudioEncoder.opus), path: 'dream_recording');
+          setState(() {
+            _isRecording = true;
+            _audioBytes = null;
+          });
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Microphone permission was denied.')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Recording error: $e')),
+        );
+        setState(() => _isRecording = false);
+      }
+    }
   }
 
   Future<void> _save() async {
@@ -65,7 +106,7 @@ class _NewDreamScreenState extends State<NewDreamScreen> {
     }
 
     setState(() => _saving = true);
-    final values = {
+    final values = <String, dynamic>{
       'title': _titleController.text.trim().isEmpty
           ? null
           : _titleController.text.trim(),
@@ -75,6 +116,19 @@ class _NewDreamScreenState extends State<NewDreamScreen> {
     };
 
     try {
+      // If a new recording exists, upload it first, then link its path.
+      if (_audioBytes != null) {
+        final userId = supabase.auth.currentUser!.id;
+        final audioPath =
+            '$userId/${DateTime.now().millisecondsSinceEpoch}.webm';
+        await supabase.storage.from('recordings').uploadBinary(
+              audioPath,
+              _audioBytes!,
+              fileOptions: const FileOptions(contentType: 'audio/webm'),
+            );
+        values['audio_path'] = audioPath;
+      }
+
       if (_isEditing) {
         await supabase
             .from('dreams')
@@ -99,6 +153,9 @@ class _NewDreamScreenState extends State<NewDreamScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final hasExistingAudio =
+        _isEditing && widget.dream?['audio_path'] != null;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? 'Edit dream' : 'New dream'),
@@ -125,11 +182,31 @@ class _NewDreamScreenState extends State<NewDreamScreen> {
           const SizedBox(height: 16),
           TextField(
             controller: _contentController,
-            autofocus: !_isEditing,
             maxLines: 6,
             decoration: const InputDecoration(
                 hintText: 'What did you dream about?',
                 border: OutlineInputBorder()),
+          ),
+          const SizedBox(height: 24),
+          Text('Voice note', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              FilledButton.icon(
+                onPressed: _toggleRecording,
+                icon: Icon(_isRecording ? Icons.stop : Icons.mic),
+                label: Text(_isRecording
+                    ? 'Stop'
+                    : (_audioBytes == null ? 'Record' : 'Re-record')),
+              ),
+              const SizedBox(width: 12),
+              if (_isRecording)
+                const Text('Recording…')
+              else if (_audioBytes != null)
+                const Text('Recording captured ✓')
+              else if (hasExistingAudio)
+                const Text('Existing recording kept'),
+            ],
           ),
           const SizedBox(height: 24),
           Text('How did it feel?',

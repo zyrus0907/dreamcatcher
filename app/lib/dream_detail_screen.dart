@@ -1,3 +1,4 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'main.dart';
 import 'new_dream_screen.dart';
@@ -12,11 +13,64 @@ class DreamDetailScreen extends StatefulWidget {
 
 class _DreamDetailScreenState extends State<DreamDetailScreen> {
   late Map<String, dynamic> _dream;
+  final AudioPlayer _player = AudioPlayer();
+  bool _isPlaying = false;
+  bool _sourceLoaded = false;
+  bool _loadingAudio = false;
 
   @override
   void initState() {
     super.initState();
     _dream = widget.dream;
+    _player.onPlayerComplete.listen((_) {
+      if (mounted) {
+        setState(() {
+          _isPlaying = false;
+          _sourceLoaded = false;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  Future<void> _togglePlay() async {
+    final path = _dream['audio_path'] as String?;
+    if (path == null) return;
+    try {
+      if (_isPlaying) {
+        await _player.pause();
+        setState(() => _isPlaying = false);
+      } else if (_sourceLoaded) {
+        await _player.resume();
+        setState(() => _isPlaying = true);
+      } else {
+        setState(() => _loadingAudio = true);
+        final url = await supabase.storage
+            .from('recordings')
+            .createSignedUrl(path, 3600);
+        await _player.play(UrlSource(url));
+        setState(() {
+          _isPlaying = true;
+          _sourceLoaded = true;
+          _loadingAudio = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not play audio: $e')),
+        );
+        setState(() {
+          _loadingAudio = false;
+          _isPlaying = false;
+        });
+      }
+    }
   }
 
   Future<void> _edit() async {
@@ -30,7 +84,12 @@ class _DreamDetailScreenState extends State<DreamDetailScreen> {
             .select()
             .eq('id', _dream['id'])
             .single();
-        setState(() => _dream = Map<String, dynamic>.from(data));
+        await _player.stop();
+        setState(() {
+          _dream = Map<String, dynamic>.from(data);
+          _isPlaying = false;
+          _sourceLoaded = false;
+        });
       } catch (_) {
         if (mounted) Navigator.of(context).pop(true);
       }
@@ -71,6 +130,7 @@ class _DreamDetailScreenState extends State<DreamDetailScreen> {
     final content = (_dream['content'] as String?) ?? '';
     final emotions = (_dream['emotions'] as List?)?.cast<String>() ?? [];
     final tags = (_dream['tags'] as List?)?.cast<String>() ?? [];
+    final audioPath = _dream['audio_path'] as String?;
     final created =
         DateTime.tryParse(_dream['created_at'] as String? ?? '')?.toLocal();
 
@@ -94,6 +154,16 @@ class _DreamDetailScreenState extends State<DreamDetailScreen> {
                 style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 16),
           Text(content, style: Theme.of(context).textTheme.bodyLarge),
+          if (audioPath != null) ...[
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: _loadingAudio ? null : _togglePlay,
+              icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
+              label: Text(_loadingAudio
+                  ? 'Loading…'
+                  : (_isPlaying ? 'Pause voice note' : 'Play voice note')),
+            ),
+          ],
           if (emotions.isNotEmpty) ...[
             const SizedBox(height: 24),
             Text('Emotions', style: Theme.of(context).textTheme.titleSmall),
@@ -101,8 +171,7 @@ class _DreamDetailScreenState extends State<DreamDetailScreen> {
             Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children:
-                    emotions.map((e) => Chip(label: Text(e))).toList()),
+                children: emotions.map((e) => Chip(label: Text(e))).toList()),
           ],
           if (tags.isNotEmpty) ...[
             const SizedBox(height: 24),
@@ -111,8 +180,7 @@ class _DreamDetailScreenState extends State<DreamDetailScreen> {
             Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children:
-                    tags.map((t) => Chip(label: Text('#$t'))).toList()),
+                children: tags.map((t) => Chip(label: Text('#$t'))).toList()),
           ],
         ],
       ),

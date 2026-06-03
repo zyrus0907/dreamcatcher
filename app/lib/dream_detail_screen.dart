@@ -17,6 +17,7 @@ class _DreamDetailScreenState extends State<DreamDetailScreen> {
   bool _isPlaying = false;
   bool _sourceLoaded = false;
   bool _loadingAudio = false;
+  bool _changed = false;
 
   @override
   void initState() {
@@ -36,6 +37,26 @@ class _DreamDetailScreenState extends State<DreamDetailScreen> {
   void dispose() {
     _player.dispose();
     super.dispose();
+  }
+
+  bool get _isPinned => _dream['pinned'] == true;
+
+  Future<void> _togglePin() async {
+    final newVal = !_isPinned;
+    try {
+      await supabase
+          .from('dreams')
+          .update({'pinned': newVal}).eq('id', _dream['id']);
+      setState(() {
+        _dream = {..._dream, 'pinned': newVal};
+        _changed = true;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not update pin: $e')));
+      }
+    }
   }
 
   Future<void> _togglePlay() async {
@@ -89,6 +110,7 @@ class _DreamDetailScreenState extends State<DreamDetailScreen> {
           _dream = Map<String, dynamic>.from(data);
           _isPlaying = false;
           _sourceLoaded = false;
+          _changed = true;
         });
       } catch (_) {
         if (mounted) Navigator.of(context).pop(true);
@@ -136,8 +158,18 @@ class _DreamDetailScreenState extends State<DreamDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(_changed),
+        ),
         title: Text((title == null || title.isEmpty) ? 'Dream' : title),
         actions: [
+          IconButton(
+            icon: Icon(_isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                color: _isPinned ? starGold : null),
+            tooltip: _isPinned ? 'Unpin' : 'Pin',
+            onPressed: _togglePin,
+          ),
           IconButton(
               icon: const Icon(Icons.edit), tooltip: 'Edit', onPressed: _edit),
           IconButton(

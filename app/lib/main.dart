@@ -127,6 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final data = await supabase
           .from('dreams')
           .select()
+          .order('pinned', ascending: false)
           .order('created_at', ascending: false);
       setState(() {
         _dreams = List<Map<String, dynamic>>.from(data);
@@ -439,6 +440,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           Row(
                             children: [
+                              if (dream['pinned'] == true)
+                                const Padding(
+                                  padding: EdgeInsets.only(right: 6),
+                                  child: Icon(Icons.push_pin,
+                                      size: 14, color: starGold),
+                                ),
                               Expanded(
                                 child: Text(
                                   (title == null || title.isEmpty)

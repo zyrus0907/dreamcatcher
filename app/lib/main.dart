@@ -8,6 +8,7 @@ import 'dream_detail_screen.dart';
 import 'search_screen.dart';
 import 'dream_recovery_screen.dart';
 import 'pattern_analysis_screen.dart';
+import 'dream_universe_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -229,6 +230,8 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () => _go(const PatternAnalysisScreen())),
           _navItem(Icons.search, 'Search',
               onTap: () => _go(const SearchScreen())),
+          _navItem(Icons.bubble_chart, 'Universe',
+              onTap: () => _go(const DreamUniverseScreen())),
           const Spacer(),
           Text('Dreams captured',
               style: Theme.of(context)
@@ -299,6 +302,9 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
               icon: const Icon(Icons.insights),
               onPressed: () => _go(const PatternAnalysisScreen())),
+          IconButton(
+              icon: const Icon(Icons.bubble_chart),
+              onPressed: () => _go(const DreamUniverseScreen())),
           IconButton(
               icon: const Icon(Icons.search),
               onPressed: () => _go(const SearchScreen())),
@@ -566,6 +572,8 @@ class _HomeScreenState extends State<HomeScreen> {
               () => _go(const PatternAnalysisScreen())),
           tile(Icons.search, 'Search dreams',
               () => _go(const SearchScreen())),
+          tile(Icons.bubble_chart, 'Explore your universe',
+              () => _go(const DreamUniverseScreen())),
         ],
       ),
     );

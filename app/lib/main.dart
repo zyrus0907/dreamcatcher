@@ -9,6 +9,7 @@ import 'search_screen.dart';
 import 'dream_recovery_screen.dart';
 import 'pattern_analysis_screen.dart';
 import 'dream_universe_screen.dart';
+import 'settings_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -232,6 +233,8 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () => _go(const SearchScreen())),
           _navItem(Icons.bubble_chart, 'Universe',
               onTap: () => _go(const DreamUniverseScreen())),
+          _navItem(Icons.settings_outlined, 'Settings',
+              onTap: () => _go(const SettingsScreen())),
           const Spacer(),
           Text('Dreams captured',
               style: Theme.of(context)
@@ -308,6 +311,9 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
               icon: const Icon(Icons.search),
               onPressed: () => _go(const SearchScreen())),
+          IconButton(
+              icon: const Icon(Icons.settings_outlined),
+              onPressed: () => _go(const SettingsScreen())),
           IconButton(
               icon: const Icon(Icons.logout),
               onPressed: () => supabase.auth.signOut()),

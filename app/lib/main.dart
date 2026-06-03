@@ -406,16 +406,91 @@ class _HomeScreenState extends State<HomeScreen> {
         children: shown.map((dream) {
           final title = (dream['title'] as String?)?.trim();
           final content = (dream['content'] as String?) ?? '';
-          return ListTile(
-            contentPadding: EdgeInsets.zero,
-            onTap: () => _openDream(dream),
-            title: Text(
-              (title == null || title.isEmpty) ? 'Untitled dream' : title,
-              style: const TextStyle(fontWeight: FontWeight.w600),
+          final emotions = (dream['emotions'] as List?)?.cast<String>() ?? [];
+          final hasAudio = dream['audio_path'] != null;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () => _openDream(dream),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: nightBg.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: softViolet.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.nightlight_round,
+                          size: 18, color: softViolet),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  (title == null || title.isEmpty)
+                                      ? 'Untitled dream'
+                                      : title,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w700),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (hasAudio)
+                                const Icon(Icons.mic,
+                                    size: 16, color: starGold),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(content,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  color: warmText.withValues(alpha: 0.7),
+                                  fontSize: 13)),
+                          if (emotions.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: emotions.take(4).map((e) {
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: starGold.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(e,
+                                      style: const TextStyle(
+                                          fontSize: 11,
+                                          color: starGold,
+                                          fontWeight: FontWeight.w600)),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            subtitle:
-                Text(content, maxLines: 1, overflow: TextOverflow.ellipsis),
-            trailing: const Icon(Icons.chevron_right, color: softViolet),
           );
         }).toList(),
       ),

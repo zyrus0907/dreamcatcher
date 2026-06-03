@@ -100,45 +100,68 @@ class _PatternAnalysisScreenState extends State<PatternAnalysisScreen> {
         Text('Based on $count dream${count == 1 ? '' : 's'}',
             style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 24),
-        _section(
-          'Most common emotions',
-          topEmotions.isEmpty
-              ? const Text('No emotions tagged yet.')
-              : Column(
-                  children: topEmotions.map((e) {
-                    final m = e as Map;
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(m['emotion']?.toString() ?? ''),
-                      trailing: Text('${m['count']}×'),
-                    );
-                  }).toList(),
-                ),
+
+        // ── Emotions table ──
+        Text('Most common emotions',
+            style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
+        if (topEmotions.isEmpty)
+          const Text('No emotions tagged yet.')
+        else
+          DataTable(
+            headingRowColor: WidgetStateProperty.all(
+                starGold.withValues(alpha: 0.12)),
+            columns: const [
+              DataColumn(label: Text('Emotion')),
+              DataColumn(label: Text('Times'), numeric: true),
+            ],
+            rows: topEmotions.map((e) {
+              final m = e as Map;
+              return DataRow(cells: [
+                DataCell(Text(m['emotion']?.toString() ?? '')),
+                DataCell(Text('${m['count']}')),
+              ]);
+            }).toList(),
+          ),
+
+        const SizedBox(height: 32),
+
+        // ── Recurring elements table ──
+        Text('Recurring elements',
+            style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
+        Table(
+          border: TableBorder.all(
+            color: warmText.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          columnWidths: const {
+            0: IntrinsicColumnWidth(),
+            1: FlexColumnWidth(),
+          },
+          defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+          children: [
+            _recurRow('People', people),
+            _recurRow('Places', locations),
+            _recurRow('Symbols & themes', symbols),
+          ],
         ),
-        _section('Recurring people', _chips(people)),
-        _section('Recurring places', _chips(locations)),
-        _section('Recurring symbols & themes', _chips(symbols)),
       ],
     );
   }
 
-  Widget _chips(List<String> items) {
-    if (items.isEmpty) return const Text('Nothing recurring yet.');
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: items.map((i) => Chip(label: Text(i))).toList(),
-    );
-  }
-
-  Widget _section(String title, Widget child) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  TableRow _recurRow(String category, List<String> items) {
+    return TableRow(
       children: [
-        Text(title, style: Theme.of(context).textTheme.titleSmall),
-        const SizedBox(height: 8),
-        child,
-        const SizedBox(height: 24),
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: Text(category,
+              style: const TextStyle(fontWeight: FontWeight.w700)),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: Text(items.isEmpty ? '—' : items.join(', ')),
+        ),
       ],
     );
   }
